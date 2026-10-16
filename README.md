@@ -1,8 +1,22 @@
-# Drone Traffic Research：基础仿真器
+# Drone Traffic Research：无人机交通算法与基础仿真器
 
-这是从 RobotSim 迁移的二维、多无人机、固定步长仿真基础。采用 SI 单位，保留旧速度位置积分、速度松弛、加速度模长限幅和周期控制。当前控制器仅输出预设速度，用于验证底层环境；尚未实现论文交通管理算法。
+这是从 RobotSim 迁移的二维、多无人机、固定步长仿真基础。采用 SI 单位，保留旧速度位置积分、速度松弛、加速度模长限幅和周期控制。V2 在其上实现论文核心 Self-drive、Repulsion、Friction，保留 V1 固定速度控制器与全部验证。
 
-## 运行
+## V2 核心交通算法
+
+~~~bash
+conda activate drone-traffic
+export MPLCONFIGDIR=/tmp/drone-traffic-matplotlib
+python -m pytest -q --junitxml=results/pytest_v2.xml
+python -m experiments.run_traffic --scenario all --mode all --gif
+python -m experiments.run_traffic --replay results/traffic/head_on/full
+~~~
+
+实测102项测试通过，完成27组小规模对照实验与5组参数敏感性实验。C1–C5使用速度圆／半平面交点求解。迎面、追越及巡航初态五机可完成目标；同步静止初态的交叉和五机存在活锁／死锁，不能仅凭无碰撞判定成功。Queueing、噪声、延迟尚未加入，部分论文细节采用已记录的工程补全。
+
+详见 [V2实现、假设与结果](docs/v2_traffic_algorithm.md)、[实验汇总](results/traffic/summary.csv)、[迎面动画](results/traffic/head_on/full/replay.gif)。各场景保存配置、指标、三分量和迭代诊断、PNG及可重放NPZ。结果文件保存在本地 `results/`，不纳入Git。
+
+## V1 基础仿真运行
 
 在项目根目录执行：
 
@@ -84,7 +98,7 @@ with np.load("results/basic/five_agents/trajectory.npz", allow_pickle=False) as 
 | experiments/run_basic.py | 命令行运行、摘要和静态绘图 |
 | tests/ | 解析解、原 C 数值片段对照、状态／邻居／引擎／输出验证 |
 
-本轮实测 **47 passed**。C 对照测试从只读原仓库提取原函数／代码片段，在 pytest 临时目录用 GCC 编译，绕过 GUI 依赖；若机器没有 GCC，只跳过这 4 组对照，解析解测试仍执行。原版 RobotSim 整个程序没有构建或运行。
+V1 阶段实测 **47 passed**，这些测试在 V2 中继续通过。C 对照测试从只读原仓库提取原函数／代码片段，在 pytest 临时目录用 GCC 编译，绕过 GUI 依赖；若机器没有 GCC，只跳过这 4 组对照，解析解测试仍执行。原版 RobotSim 整个程序没有构建或运行。
 
-详见 [迁移说明与实测误差](docs/simulator_migration.md) 和 [论文审计](docs/paper_audit.md)。后续控制器实现 Controller 的调用接口，观测误差／延迟通过 ObservationProvider 接入。目标状态、噪声过程和延迟历史缓存仍需下一阶段实现。
+详见 [迁移说明与实测误差](docs/simulator_migration.md) 和 [论文审计](docs/paper_audit.md)。V2目标控制器实现 Controller 调用接口，未改动 V1 引擎；观测误差／延迟可通过 ObservationProvider 接入，噪声过程和延迟历史缓存仍待实现。
 # drone-traffic-research
